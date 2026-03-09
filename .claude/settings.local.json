@@ -2,7 +2,16 @@
   "permissions": {
     "allow": [
       "WebFetch(domain:www.oscars.org)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(gh auth status)",
+      "Bash(brew --version)",
+      "Bash(brew install gh)",
+      "Bash(gh auth login --web)",
+      "Bash(git init)",
+      "Bash(git add .)",
+      "Bash(git commit -m \"Oscar Pool 2026 — app complète avec scraper Wikipedia\")"
     ]
   }
 }
