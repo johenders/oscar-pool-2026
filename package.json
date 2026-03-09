@@ -1,0 +1,13 @@
+{
+  "name": "oscar-pool-2026",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Oscar Pool 2026 — 98e cérémonie",
+  "scripts": {
+    "scrape": "node scraper.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "node-fetch": "^3.3.2"
+  }
+}
