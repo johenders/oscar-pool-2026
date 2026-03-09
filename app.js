@@ -40,6 +40,7 @@ window.startApp = async function () {
   if (!name) { input.focus(); return; }
 
   currentPlayer = name;
+  localStorage.setItem('oscarpool_name', name);
   document.getElementById('headerName').textContent = name;
 
   // Load existing votes for this player
@@ -53,6 +54,20 @@ window.startApp = async function () {
   document.getElementById('app').classList.remove('hidden');
   renderVoteView();
 };
+
+window.switchUser = function () {
+  localStorage.removeItem('oscarpool_name');
+  location.reload();
+};
+
+// Auto-fill name on return visit
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('oscarpool_name');
+  if (saved) {
+    document.getElementById('playerName').value = saved;
+    document.getElementById('splashNote').textContent = `Bon retour, ${saved} !`;
+  }
+});
 
 document.getElementById('playerName')
   .addEventListener('keydown', e => { if (e.key === 'Enter') window.startApp(); });
