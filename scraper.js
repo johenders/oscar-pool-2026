@@ -1,21 +1,14 @@
 // =====================================================
 // OSCAR POOL 2026 — Wikipedia Scraper
 // Runs via GitHub Actions every 5 min on ceremony night
-// Pushes winners to Firebase Realtime Database
+// Uses Firebase REST API (no service account key needed)
 // =====================================================
 
 import fetch from 'node-fetch';
-import admin from 'firebase-admin';
 
-// --- Firebase init ---
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: process.env.FIREBASE_DATABASE_URL,
-});
-const db = admin.database();
+const DB_URL = process.env.FIREBASE_DATABASE_URL; // e.g. https://xxx-default-rtdb.firebaseio.com
 
-// --- Category ID → search term(s) on Wikipedia ---
+// --- Category ID → section title on Wikipedia ---
 const CATEGORY_MAP = [
   { id: 'best_picture',             section: 'Best Picture' },
   { id: 'best_director',            section: 'Best Director' },
@@ -43,7 +36,6 @@ const CATEGORY_MAP = [
   { id: 'best_casting',             section: 'Best Casting' },
 ];
 
-// Nominees list (mirrors data.js) for index matching
 const NOMINEES = {
   best_picture:             ['Bugonia','F1','Frankenstein','Hamnet','Marty Supreme','One Battle After Another','The Secret Agent','Sentimental Value','Sinners','Train Dreams'],
   best_director:            ['Chloé Zhao','Josh Safdie','Paul Thomas Anderson','Joachim Trier','Ryan Coogler'],
@@ -71,17 +63,31 @@ const NOMINEES = {
   best_casting:             ['Nina Gold','Jennifer Venditti','Cassandra Kulukundis','Gabriel Domingues','Francine Maisler'],
 };
 
+// --- Firebase REST helpers ---
+async function firebaseGet(path) {
+  const res = await fetch(`${DB_URL}/${path}.json`);
+  return res.ok ? res.json() : null;
+}
+
+async function firebasePatch(path, data) {
+  const res = await fetch(`${DB_URL}/${path}.json`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.ok;
+}
+
+// --- Main scraper ---
 async function scrapeWikipedia() {
   console.log('📡 Fetching Wikipedia 98th Academy Awards...');
 
-  const url = 'https://en.m.wikipedia.org/wiki/98th_Academy_Awards';
-  const res  = await fetch(url, {
+  const res  = await fetch('https://en.m.wikipedia.org/wiki/98th_Academy_Awards', {
     headers: { 'User-Agent': 'OscarPool2026Bot/1.0 (educational project)' }
   });
   const html = await res.text();
 
-  const updates = {};
-
+  const found = {};
   for (const cat of CATEGORY_MAP) {
     const winnerName = extractWinner(html, cat.section);
     if (!winnerName) continue;
@@ -93,53 +99,42 @@ async function scrapeWikipedia() {
     );
 
     if (idx !== -1) {
-      updates[cat.id] = idx;
+      found[cat.id] = idx;
       console.log(`✅ ${cat.id}: ${nominees[idx]}`);
     } else {
-      console.log(`⚠️  ${cat.id}: found "${winnerName}" but no match in nominees list`);
+      console.log(`⚠️  ${cat.id}: found "${winnerName}" — no nominee match`);
     }
   }
 
-  if (Object.keys(updates).length === 0) {
-    console.log('ℹ️  No new winners found yet.');
+  if (Object.keys(found).length === 0) {
+    console.log('ℹ️  No winners found yet on Wikipedia.');
     return;
   }
 
-  // Only push new winners (don't overwrite existing ones)
-  const existing = (await db.ref('winners').get()).val() || {};
+  // Only write categories not already in Firebase
+  const existing = await firebaseGet('winners') || {};
   const toWrite  = {};
-  for (const [k, v] of Object.entries(updates)) {
+  for (const [k, v] of Object.entries(found)) {
     if (existing[k] === undefined) toWrite[k] = v;
   }
 
   if (Object.keys(toWrite).length > 0) {
-    await db.ref('winners').update(toWrite);
-    console.log(`🔥 Pushed ${Object.keys(toWrite).length} new winner(s) to Firebase`);
+    const ok = await firebasePatch('winners', toWrite);
+    console.log(ok
+      ? `🔥 Pushed ${Object.keys(toWrite).length} new winner(s) to Firebase`
+      : '❌ Firebase write failed'
+    );
   } else {
     console.log('ℹ️  All found winners already in Firebase.');
   }
 }
 
-/**
- * Extracts the winner for a given category section from the Wikipedia HTML.
- * Wikipedia marks the winner in a <b> or with class "background:ivory" / "winner" in the table.
- * We look for the section heading and grab the first bolded entry.
- */
 function extractWinner(html, sectionTitle) {
-  // Find the section
   const titleIdx = html.indexOf(sectionTitle);
   if (titleIdx === -1) return null;
-
-  // Grab a window of HTML after the section title (~3000 chars)
   const chunk = html.slice(titleIdx, titleIdx + 3000);
-
-  // Wikipedia marks the winner row differently:
-  // In the mobile version, winner is usually the first <b> in the category table
-  // or the row has class "winner" / bgcolor="#EEDD82"
   const boldMatch = chunk.match(/<b>([^<]{3,80})<\/b>/);
-  if (boldMatch) return boldMatch[1].trim();
-
-  return null;
+  return boldMatch ? boldMatch[1].trim() : null;
 }
 
 scrapeWikipedia()

@@ -21,10 +21,9 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install node-fetch firebase-admin
+        run: npm install node-fetch
 
       - name: Scrape & Push to Firebase
         env:
           FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: node scraper.js
