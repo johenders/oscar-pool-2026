@@ -19,7 +19,17 @@
       <p class="splash-year">98<sup>e</sup> Cérémonie · 2026</p>
       <div class="splash-divider"></div>
       <p class="splash-subtitle">Qui prédira le plus de gagnants ?</p>
-      <div class="name-entry">
+      <div class="countdown" id="splashCountdown">
+        <div class="countdown-item"><span class="countdown-num" id="cdDays">--</span><span class="countdown-label">jours</span></div>
+        <div class="countdown-sep">:</div>
+        <div class="countdown-item"><span class="countdown-num" id="cdHours">--</span><span class="countdown-label">heures</span></div>
+        <div class="countdown-sep">:</div>
+        <div class="countdown-item"><span class="countdown-num" id="cdMins">--</span><span class="countdown-label">min</span></div>
+        <div class="countdown-sep">:</div>
+        <div class="countdown-item"><span class="countdown-num" id="cdSecs">--</span><span class="countdown-label">sec</span></div>
+      </div>
+      <p class="countdown-label-main" id="countdownMsg">Votes ouverts jusqu'au dimanche 18h30</p>
+      <div class="name-entry" id="nameEntry">
         <input type="text" id="playerName" placeholder="Ton prénom" maxlength="20" autocomplete="off" />
         <button id="startBtn" onclick="startApp()">Commencer</button>
       </div>

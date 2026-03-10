@@ -32,6 +32,50 @@ let allVotes      = {};   // { playerName: { catId: nomineeIndex } }
 let winners       = {};   // { catId: nomineeIndex }
 
 // =====================================================
+// DEADLINE — Dimanche 15 mars 2026 à 18h30 EST
+// =====================================================
+const DEADLINE = new Date('2026-03-15T18:30:00-05:00');
+
+function isLocked() {
+  return new Date() >= DEADLINE;
+}
+
+function startCountdown() {
+  function update() {
+    const now  = new Date();
+    const diff = DEADLINE - now;
+
+    if (diff <= 0) {
+      // Votes fermés
+      document.getElementById('cdDays').textContent  = '00';
+      document.getElementById('cdHours').textContent = '00';
+      document.getElementById('cdMins').textContent  = '00';
+      document.getElementById('cdSecs').textContent  = '00';
+      const msg = document.getElementById('countdownMsg');
+      if (msg) msg.textContent = '🔒 Les votes sont fermés';
+      const nameEntry = document.getElementById('nameEntry');
+      if (nameEntry) {
+        nameEntry.innerHTML = '<div class="votes-locked-banner">🔒 Les votes sont fermés — bonne chance !</div>';
+      }
+      return; // stop ticking
+    }
+
+    const days  = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins  = Math.floor((diff % 3600000)  / 60000);
+    const secs  = Math.floor((diff % 60000)    / 1000);
+
+    document.getElementById('cdDays').textContent  = String(days).padStart(2, '0');
+    document.getElementById('cdHours').textContent = String(hours).padStart(2, '0');
+    document.getElementById('cdMins').textContent  = String(mins).padStart(2, '0');
+    document.getElementById('cdSecs').textContent  = String(secs).padStart(2, '0');
+
+    setTimeout(update, 1000);
+  }
+  update();
+}
+
+// =====================================================
 // SPLASH — Start
 // =====================================================
 window.startApp = async function () {
@@ -60,8 +104,9 @@ window.switchUser = function () {
   location.reload();
 };
 
-// Auto-fill name on return visit
+// Auto-fill name on return visit + démarrer le countdown
 window.addEventListener('DOMContentLoaded', () => {
+  startCountdown();
   const saved = localStorage.getItem('oscarpool_name');
   if (saved) {
     document.getElementById('playerName').value = saved;
@@ -115,6 +160,13 @@ window.showBoard = function () {
 // VOTE VIEW — Render categories
 // =====================================================
 function renderVoteView() {
+  // Bannière verrou si deadline passée
+  const saveBtn = document.getElementById('saveBtn');
+  if (isLocked()) {
+    document.getElementById('voteStatus').textContent = '🔒 Les votes sont fermés';
+    if (saveBtn) saveBtn.disabled = true;
+  }
+
   const grid = document.getElementById('categoriesGrid');
   grid.innerHTML = '';
 
@@ -172,6 +224,7 @@ window.toggleCard = function (catId) {
 };
 
 window.selectNominee = function (catId, nomineeIndex) {
+  if (isLocked()) return;
   // Unselect old
   const old = myVotes[catId];
   if (old !== undefined) {
@@ -241,6 +294,10 @@ function updateWinnerBadges() {
 // SAVE VOTES
 // =====================================================
 window.saveVotes = async function () {
+  if (isLocked()) {
+    document.getElementById('saveNote').textContent = '🔒 Les votes sont fermés.';
+    return;
+  }
   const btn  = document.getElementById('saveBtn');
   const note = document.getElementById('saveNote');
   btn.disabled = true;
