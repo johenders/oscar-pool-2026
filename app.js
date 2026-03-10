@@ -362,7 +362,8 @@ function renderScores() {
 }
 
 function renderResults() {
-  const table = document.getElementById('resultsTable');
+  const table    = document.getElementById('resultsTable');
+  const revealed = isLocked();
   table.innerHTML = '';
 
   CATEGORIES.forEach(cat => {
@@ -372,14 +373,19 @@ function renderResults() {
     const row = document.createElement('div');
     row.className = `result-row ${announced ? 'announced' : ''}`;
 
-    const picksHtml = Object.entries(allVotes).map(([rawName, votes]) => {
-      const pick = votes[cat.id];
-      if (pick === undefined) return '';
-      const nom = cat.nominees[pick];
-      let cls = '';
-      if (announced) cls = (pick === winnerIdx) ? 'correct' : 'wrong';
-      return `<span class="pick-tag ${cls}">${decodeName(rawName).split(' ')[0]}: ${nom.name}</span>`;
-    }).filter(Boolean).join('');
+    let picksHtml;
+    if (!revealed) {
+      picksHtml = '<span class="picks-hidden">🔒 Révélés dimanche à 18h30</span>';
+    } else {
+      picksHtml = Object.entries(allVotes).map(([rawName, votes]) => {
+        const pick = votes[cat.id];
+        if (pick === undefined) return '';
+        const nom = cat.nominees[pick];
+        let cls = '';
+        if (announced) cls = (pick === winnerIdx) ? 'correct' : 'wrong';
+        return `<span class="pick-tag ${cls}">${decodeName(rawName).split(' ')[0]}: ${nom.name}</span>`;
+      }).filter(Boolean).join('') || '<span style="color:var(--text-muted);font-size:11px">Aucun vote</span>';
+    }
 
     row.innerHTML = `
       <span class="result-category">${cat.name}</span>
@@ -387,7 +393,7 @@ function renderResults() {
         ? `<span class="result-winner">${cat.nominees[winnerIdx].name}</span>`
         : `<span class="result-pending">En attente…</span>`
       }
-      <div class="result-picks">${picksHtml || '<span style="color:var(--text-muted);font-size:11px">Aucun vote</span>'}</div>
+      <div class="result-picks">${picksHtml}</div>
     `;
     table.appendChild(row);
   });
@@ -397,13 +403,27 @@ function renderResults() {
 // ADMIN — Manual winner entry
 // =====================================================
 function populateAdminSelect() {
-  const sel = document.getElementById('adminCategory');
-  if (sel.children.length > 1) return;
+  const catSel = document.getElementById('adminCategory');
+  if (catSel.children.length > 1) return;
   CATEGORIES.forEach(cat => {
     const opt = document.createElement('option');
     opt.value = cat.id;
     opt.textContent = cat.name;
-    sel.appendChild(opt);
+    catSel.appendChild(opt);
+  });
+
+  // Populate nominee dropdown when category changes
+  catSel.addEventListener('change', () => {
+    const nomSel = document.getElementById('adminWinner');
+    nomSel.innerHTML = '<option value="">-- Choisir le gagnant --</option>';
+    const cat = CATEGORIES.find(c => c.id === catSel.value);
+    if (!cat) return;
+    cat.nominees.forEach((n, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = n.name + (n.film ? ` — ${n.film}` : '');
+      nomSel.appendChild(opt);
+    });
   });
 }
 
@@ -416,19 +436,13 @@ window.toggleAdmin = function () {
 
 window.adminSetWinner = async function () {
   const catId  = document.getElementById('adminCategory').value;
-  const raw    = document.getElementById('adminWinner').value.trim().toLowerCase();
+  const idxStr = document.getElementById('adminWinner').value;
   const fb     = document.getElementById('adminFeedback');
 
-  if (!catId || !raw) { fb.style.color = 'var(--red)'; fb.textContent = 'Choisis une catégorie et entre un nom.'; return; }
+  if (!catId || idxStr === '') { fb.style.color = 'var(--red)'; fb.textContent = 'Choisis une catégorie et un gagnant.'; return; }
 
   const cat = CATEGORIES.find(c => c.id === catId);
-  const idx = cat.nominees.findIndex(n => n.name.toLowerCase().includes(raw));
-
-  if (idx === -1) {
-    fb.style.color = 'var(--red)';
-    fb.textContent = `Nominé introuvable. Options: ${cat.nominees.map(n => n.name).join(', ')}`;
-    return;
-  }
+  const idx = parseInt(idxStr, 10);
 
   await update(ref(db, 'winners'), { [catId]: idx });
   fb.style.color = 'var(--green)';

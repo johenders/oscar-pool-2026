@@ -802,6 +802,13 @@ body {
   text-decoration: line-through;
 }
 
+.picks-hidden {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  letter-spacing: 0.5px;
+}
+
 /* ===================== ADMIN ===================== */
 .admin-section { padding: 24px 16px 48px; }
 
