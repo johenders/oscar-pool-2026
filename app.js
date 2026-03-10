@@ -104,15 +104,13 @@ window.switchUser = function () {
   location.reload();
 };
 
-// Auto-fill name on return visit + démarrer le countdown
-window.addEventListener('DOMContentLoaded', () => {
-  startCountdown();
-  const saved = localStorage.getItem('oscarpool_name');
-  if (saved) {
-    document.getElementById('playerName').value = saved;
-    document.getElementById('splashNote').textContent = `Bon retour, ${saved} !`;
-  }
-});
+// Les modules ES s'exécutent après le DOM — appel direct
+startCountdown();
+const saved = localStorage.getItem('oscarpool_name');
+if (saved) {
+  document.getElementById('playerName').value = saved;
+  document.getElementById('splashNote').textContent = `Bon retour, ${saved} !`;
+}
 
 document.getElementById('playerName')
   .addEventListener('keydown', e => { if (e.key === 'Enter') window.startApp(); });
