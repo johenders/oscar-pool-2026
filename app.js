@@ -158,13 +158,6 @@ window.showBoard = function () {
 // VOTE VIEW — Render categories
 // =====================================================
 function renderVoteView() {
-  // Bannière verrou si deadline passée
-  const saveBtn = document.getElementById('saveBtn');
-  if (isLocked()) {
-    document.getElementById('voteStatus').textContent = '🔒 Les votes sont fermés';
-    if (saveBtn) saveBtn.disabled = true;
-  }
-
   const grid = document.getElementById('categoriesGrid');
   grid.innerHTML = '';
 
@@ -222,7 +215,6 @@ window.toggleCard = function (catId) {
 };
 
 window.selectNominee = function (catId, nomineeIndex) {
-  if (isLocked()) return;
   // Unselect old
   const old = myVotes[catId];
   if (old !== undefined) {
@@ -292,10 +284,6 @@ function updateWinnerBadges() {
 // SAVE VOTES
 // =====================================================
 window.saveVotes = async function () {
-  if (isLocked()) {
-    document.getElementById('saveNote').textContent = '🔒 Les votes sont fermés.';
-    return;
-  }
   const btn  = document.getElementById('saveBtn');
   const note = document.getElementById('saveNote');
   btn.disabled = true;
