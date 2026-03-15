@@ -46,18 +46,13 @@ function startCountdown() {
     const diff = DEADLINE - now;
 
     if (diff <= 0) {
-      // Votes fermés
       document.getElementById('cdDays').textContent  = '00';
       document.getElementById('cdHours').textContent = '00';
       document.getElementById('cdMins').textContent  = '00';
       document.getElementById('cdSecs').textContent  = '00';
       const msg = document.getElementById('countdownMsg');
-      if (msg) msg.textContent = '🔒 Les votes sont fermés';
-      const nameEntry = document.getElementById('nameEntry');
-      if (nameEntry) {
-        nameEntry.innerHTML = '<div class="votes-locked-banner">🔒 Les votes sont fermés — bonne chance !</div>';
-      }
-      return; // stop ticking
+      if (msg) msg.textContent = 'Les Oscars sont en cours !';
+      return;
     }
 
     const days  = Math.floor(diff / 86400000);
