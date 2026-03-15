@@ -32,9 +32,9 @@ let allVotes      = {};   // { playerName: { catId: nomineeIndex } }
 let winners       = {};   // { catId: nomineeIndex }
 
 // =====================================================
-// DEADLINE — Dimanche 15 mars 2026 à 18h30 EST
+// DEADLINE — Dimanche 15 mars 2026 à 18h30 EDT (heure avancée de l'Est)
 // =====================================================
-const DEADLINE = new Date('2026-03-15T18:30:00-05:00');
+const DEADLINE = new Date('2026-03-15T18:30:00-04:00');
 
 function isLocked() {
   return new Date() >= DEADLINE;
