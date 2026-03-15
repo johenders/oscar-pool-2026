@@ -2,9 +2,9 @@ name: Oscar Results Scraper
 
 on:
   schedule:
-    # Toutes les 5 minutes, dimanche 15 mars 2026 entre 20h et 2h (EST = UTC-5)
+    # Toutes les minutes, dimanche 15 mars 2026 entre 20h et 2h (EST = UTC-5)
     # 20h EST = 01h00 UTC  |  02h EST = 07h00 UTC
-    - cron: '*/5 1-7 15 3 0'
+    - cron: '* 1-7 15 3 0'
 
   # Permet aussi de lancer manuellement depuis GitHub
   workflow_dispatch:
@@ -23,7 +23,10 @@ jobs:
       - name: Install dependencies
         run: npm install node-fetch
 
-      - name: Scrape & Push to Firebase
+      - name: Scrape & Push to Firebase (toutes les 30s)
         env:
           FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
-        run: node scraper.js
+        run: |
+          node scraper.js
+          sleep 30
+          node scraper.js
