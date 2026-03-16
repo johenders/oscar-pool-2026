@@ -109,9 +109,8 @@
             <select id="adminCategory">
               <option value="">-- Choisir une catégorie --</option>
             </select>
-            <select id="adminWinner">
-              <option value="">-- Choisir le gagnant --</option>
-            </select>
+            <select id="adminWinner" multiple size="4"></select>
+            <small style="color:var(--text-muted);font-size:11px">Cmd+clic pour sélectionner plusieurs gagnants</small>
             <button class="admin-save-btn" onclick="adminSetWinner()">Confirmer</button>
           </div>
           <p class="admin-feedback" id="adminFeedback"></p>

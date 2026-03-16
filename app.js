@@ -305,14 +305,21 @@ function renderBoard() {
   renderResults();
 }
 
+// Retourne true si pickIdx est un gagnant (supporte index seul ou tableau)
+function isWinningPick(catId, pickIdx) {
+  const w = winners[catId];
+  if (w === undefined) return false;
+  return Array.isArray(w) ? w.includes(pickIdx) : w === pickIdx;
+}
+
 function renderScores() {
   const list = document.getElementById('scoresList');
   const total = Object.keys(winners).length;
 
   const scores = Object.entries(allVotes).map(([name, votes]) => {
     let pts = 0;
-    Object.entries(winners).forEach(([catId, winnerIdx]) => {
-      if (votes[catId] === winnerIdx) pts++;
+    Object.keys(winners).forEach(catId => {
+      if (votes[catId] !== undefined && isWinningPick(catId, votes[catId])) pts++;
     });
     return { name: decodeName(name), pts };
   });
@@ -350,8 +357,8 @@ function renderResults() {
   table.innerHTML = '';
 
   CATEGORIES.forEach(cat => {
-    const winnerIdx = winners[cat.id];
-    const announced = winnerIdx !== undefined;
+    const w         = winners[cat.id];
+    const announced = w !== undefined;
 
     const row = document.createElement('div');
     row.className = `result-row ${announced ? 'announced' : ''}`;
@@ -365,15 +372,19 @@ function renderResults() {
         if (pick === undefined) return '';
         const nom = cat.nominees[pick];
         let cls = '';
-        if (announced) cls = (pick === winnerIdx) ? 'correct' : 'wrong';
+        if (announced) cls = isWinningPick(cat.id, pick) ? 'correct' : 'wrong';
         return `<span class="pick-tag ${cls}">${decodeName(rawName).split(' ')[0]}: ${nom.name}</span>`;
       }).filter(Boolean).join('') || '<span style="color:var(--text-muted);font-size:11px">Aucun vote</span>';
     }
 
+    const winnerLabel = announced
+      ? (Array.isArray(w) ? w.map(i => cat.nominees[i].name).join(' & ') : cat.nominees[w].name)
+      : null;
+
     row.innerHTML = `
       <span class="result-category">${cat.name}</span>
       ${announced
-        ? `<span class="result-winner">${cat.nominees[winnerIdx].name}</span>`
+        ? `<span class="result-winner">${winnerLabel}</span>`
         : `<span class="result-pending">En attente…</span>`
       }
       <div class="result-picks">${picksHtml}</div>
@@ -398,7 +409,7 @@ function populateAdminSelect() {
   // Populate nominee dropdown when category changes
   catSel.addEventListener('change', () => {
     const nomSel = document.getElementById('adminWinner');
-    nomSel.innerHTML = '<option value="">-- Choisir le gagnant --</option>';
+    nomSel.innerHTML = '';
     const cat = CATEGORIES.find(c => c.id === catSel.value);
     if (!cat) return;
     cat.nominees.forEach((n, i) => {
@@ -419,18 +430,19 @@ window.toggleAdmin = function () {
 
 window.adminSetWinner = async function () {
   const catId  = document.getElementById('adminCategory').value;
-  const idxStr = document.getElementById('adminWinner').value;
+  const nomSel = document.getElementById('adminWinner');
   const fb     = document.getElementById('adminFeedback');
+  const selected = Array.from(nomSel.selectedOptions).map(o => parseInt(o.value, 10));
 
-  if (!catId || idxStr === '') { fb.style.color = 'var(--red)'; fb.textContent = 'Choisis une catégorie et un gagnant.'; return; }
+  if (!catId || selected.length === 0) { fb.style.color = 'var(--red)'; fb.textContent = 'Choisis une catégorie et au moins un gagnant.'; return; }
 
-  const cat = CATEGORIES.find(c => c.id === catId);
-  const idx = parseInt(idxStr, 10);
+  const cat   = CATEGORIES.find(c => c.id === catId);
+  const value = selected.length === 1 ? selected[0] : selected;
 
-  await update(ref(db, 'winners'), { [catId]: idx });
+  await update(ref(db, 'winners'), { [catId]: value });
   fb.style.color = 'var(--green)';
-  fb.textContent = `✓ Gagnant enregistré : ${cat.nominees[idx].name}`;
-  document.getElementById('adminWinner').value = '';
+  fb.textContent = `✓ ${selected.map(i => cat.nominees[i].name).join(' & ')}`;
+  Array.from(nomSel.options).forEach(o => o.selected = false);
 };
 
 // =====================================================
